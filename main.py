@@ -1,15 +1,19 @@
 import os
-import re
 import cv2
+import glob
 import tqdm
 import yaml
 import torch
 import pandas as pd
 import numpy as np
 from PIL import Image
+from utils.args import Args
 import matplotlib.pyplot as plt
+from optical_flow.optical_flow import *
 from utils.fusion import apply_fusion
 from utils.processing import make_normalize
+import torchvision.transforms.functional as TF
+
 from networks import create_architecture, load_weights
 from torchvision.transforms import CenterCrop, Resize, Compose, InterpolationMode
 
@@ -186,7 +190,7 @@ def save_results(string_videos, video_name, input_csv, models, fusion_methods, t
         
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         df.to_csv(output_csv, index=False)
-    
+        return output_csv
     except Exception as e:
         raise RuntimeError(f"Error analyzing video: {e}")
 
@@ -239,7 +243,6 @@ def process_single_folder(video):
             table[f'fusion[{fusion_method}]'] = apply_fusion(table[models].values, fusion_method, axis=-1)
 
         # filename,clipdet_latent10k,clipdet_latent10k_plus,Corvi2023,fusion[max_logit],fusion[mean_logit],fusion[median_logit],fusion[lse_logit],fusion[mean_prob],fusion[soft_or_prob]
-
         os.makedirs(os.path.dirname(os.path.abspath(output_csv)), exist_ok=True)
         table.to_csv(output_csv, index=False)
         print(f"Results saved to {output_csv}")
@@ -258,6 +261,7 @@ def process_all_dataset():
         csv_path = os.path.join(temp_dir, "input_images.csv")
         output_csv = os.path.join(RESULTS_PATH, f"dataset/frames_results_{video_name}.csv")
         
+        # CLIP prediction
         print("Extracting frames from video...")
         frame_paths = extract_frames_from_video(video_path, temp_dir)
         
@@ -275,8 +279,22 @@ def process_all_dataset():
         table.to_csv(output_csv, index=False)
         print(f"Results saved to {output_csv}")
     
-        save_results("complete_dataset", video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)            
+        output_csv_results = save_results("complete_dataset", video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)            
         
+        # OF prediction
+        df = pd.read_csv(output_csv_results)
+        if 'prediction_OF' not in df.columns:
+            df['prediction_OF'] = None
+
+        prediction = get_prob(video_path)
+
+        df.loc[df['filename'] == video_name, 'prediction_OF'] = prediction
+
+        df.to_csv(csv_path, index=False)
+
+        print(f"Updated CSV with new OF prediction for {video_name}.")
+
+                
 if __name__ == "__main__":
     video = input("Which video do you want to test? \n 1. Luma \n 2. Real \n 3. CogVideoX-5B \n 4. Hunyuan \n 5. All dataset \n")
     while video not in ['1', '2', '3', '4', '5']:
@@ -286,5 +304,3 @@ if __name__ == "__main__":
         process_all_dataset()
     else:
         process_single_folder(video)
-
-    
