@@ -1,20 +1,25 @@
 import sys
+import os
 import torch
 import torchvision.transforms as transforms
-import torchvision.transforms.functional as TF
 from PIL import Image
 import glob
 import cv2
 import numpy as np
 from tqdm import tqdm
-
-sys.path.append('core')
-from raft import RAFT
-from args import Args
-from utils import flow_viz
-from utils.utils import InputPadder
 from natsort import natsorted
-from utils1.utils import get_network, str2bool, to_cuda
+
+
+print(sys.path)
+
+# print the current working directory
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # optical_flow folder
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # Root folder
+
+from optical_flow.core.raft_OF import RAFT
+from core.args import Args
+from core.utils.utils import InputPadder
+from core.utils1.utils import get_network, str2bool, to_cuda
 
 DEVICE = 'cuda:1'
 # DEVICE = 'cpu'  # Changed to 'cpu'
@@ -67,8 +72,14 @@ def video_to_frames(video_path, output_folder):
 
 
 def OF_gen(args):
+    
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() and not args.use_cpu else "cpu")
+    print(f"Loading model on {DEVICE}")
+
+    # Load the model checkpoint
+
     model = torch.nn.DataParallel(RAFT(args))
-    model.load_state_dict(torch.load(args.model, map_location=torch.device(DEVICE)))
+    model.load_state_dict(torch.load(args.model, map_location=DEVICE))
 
     model = model.module
     model.to(DEVICE)

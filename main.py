@@ -1,18 +1,14 @@
 import os
 import cv2
-import glob
 import tqdm
 import yaml
 import torch
 import pandas as pd
 import numpy as np
 from PIL import Image
-from utils.args import Args
-import matplotlib.pyplot as plt
 from optical_flow.optical_flow import *
 from utils.fusion import apply_fusion
 from utils.processing import make_normalize
-import torchvision.transforms.functional as TF
 
 from networks import create_architecture, load_weights
 from torchvision.transforms import CenterCrop, Resize, Compose, InterpolationMode
@@ -119,7 +115,7 @@ def running_tests(input_csv, weights_dir, models_list, device, batch_size=1):
         batch_img = {k: list() for k in transform_dict}
         batch_id = list()
         last_index = table.index[-1]
-        for index in tqdm.tqdm(table.index, total=len(table)):
+        for index in tqdm(table.index, total=len(table)):
             filename = os.path.join(rootdataset, table.loc[index, 'filename'])
             for k in transform_dict:
                 batch_img[k].append(transform_dict[k](Image.open(filename).convert('RGB')))
@@ -254,33 +250,34 @@ def process_all_dataset():
     video_paths= [os.path.join(dataset_path, f) for f in os.listdir(dataset_path) if f.endswith('.mp4')]
 
     for video_path in video_paths:
-        print("\n\n\nRunning tests on video: ", video_path, "\n\n\n")
+        # print("\n\n\nRunning tests on video: ", video_path, "\n\n\n")
         
         video_name = os.path.splitext(os.path.basename(video_path))[0]
         
         csv_path = os.path.join(temp_dir, "input_images.csv")
-        output_csv = os.path.join(RESULTS_PATH, f"dataset/frames_results_{video_name}.csv")
+        # output_csv = os.path.join(RESULTS_PATH, f"dataset/frames_results_{video_name}.csv")
         
-        # CLIP prediction
-        print("Extracting frames from video...")
-        frame_paths = extract_frames_from_video(video_path, temp_dir)
+        # # CLIP prediction
+        # print("Extracting frames from video...")
+        # frame_paths = extract_frames_from_video(video_path, temp_dir)
         
-        generate_csv_from_frames(frame_paths, csv_path)
-        print(f"Frames extracted and CSV generated: {csv_path}")
+        # generate_csv_from_frames(frame_paths, csv_path)
+        # print(f"Frames extracted and CSV generated: {csv_path}")
 
-        table = running_tests(csv_path, weights_dir, models, device)
+        # table = running_tests(csv_path, weights_dir, models, device)
 
-        for fusion_method in fusion_methods:
-            table[f'fusion[{fusion_method}]'] = apply_fusion(table[models].values, fusion_method, axis=-1)
+        # for fusion_method in fusion_methods:
+        #     table[f'fusion[{fusion_method}]'] = apply_fusion(table[models].values, fusion_method, axis=-1)
 
-        # filename,clipdet_latent10k,clipdet_latent10k_plus,Corvi2023,fusion[max_logit],fusion[mean_logit],fusion[median_logit],fusion[lse_logit],fusion[mean_prob],fusion[soft_or_prob]
+        # # filename,clipdet_latent10k,clipdet_latent10k_plus,Corvi2023,fusion[max_logit],fusion[mean_logit],fusion[median_logit],fusion[lse_logit],fusion[mean_prob],fusion[soft_or_prob]
 
-        os.makedirs(os.path.dirname(os.path.abspath(output_csv)), exist_ok=True)
-        table.to_csv(output_csv, index=False)
-        print(f"Results saved to {output_csv}")
+        # os.makedirs(os.path.dirname(os.path.abspath(output_csv)), exist_ok=True)
+        # table.to_csv(output_csv, index=False)
+        # print(f"Results saved to {output_csv}")
     
-        output_csv_results = save_results("complete_dataset", video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)            
-        
+        # output_csv_results = save_results("complete_dataset", video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)            
+        output_csv_results = os.path.join(RESULTS_PATH, f'results_complete_dataset.csv')
+
         # OF prediction
         df = pd.read_csv(output_csv_results)
         if 'prediction_OF' not in df.columns:
