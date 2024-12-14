@@ -9,12 +9,10 @@ import numpy as np
 from tqdm import tqdm
 from natsort import natsorted
 
-
 print(sys.path)
 
-# print the current working directory
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))  # optical_flow folder
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # Root folder
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))  
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  
 
 from optical_flow.core.raft_OF import RAFT
 from core.args import Args
