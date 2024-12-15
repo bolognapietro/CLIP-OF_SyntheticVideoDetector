@@ -29,16 +29,48 @@ temp_dir = os.path.join(parent_path, "temp_frames")
 models = ['clipdet_latent10k', 'clipdet_latent10k_plus', 'Corvi2023']
 fusion_methods = ['mean_logit', 'max_logit', 'median_logit', 'lse_logit', 'mean_prob', 'soft_or_prob']
 
+
 def get_config(model_name, weights_dir='./weights'):
+    """
+    Loads model configuration and computes the path to its weights.
+
+    Parameters:
+    -----------
+    model_name : str
+        The name of the model whose configuration is to be loaded.
+    weights_dir : str, optional
+        Directory containing the model's configuration and weights (default is './weights').
+
+    Returns:
+    --------
+    tuple
+        A tuple containing model details: (model_name, model_path, architecture, norm_type, patch_size).
+    """
+
     with open(os.path.join(weights_dir, model_name, 'config.yaml')) as fid:
         data = yaml.load(fid, Loader=yaml.FullLoader)
+
     model_path = os.path.join(weights_dir, model_name, data['weights_file'])
+
     return data['model_name'], model_path, data['arch'], data['norm_type'], data['patch_size']
 
 def extract_frames_from_video(video_path, output_dir):
     """
-    Extract frames from an MP4 video and save them as images in the output directory.
+    Extract frames from an MP4 video and save them as images.
+
+    Parameters:
+    -----------
+    video_path : str
+        Path to the input video file.
+    output_dir : str
+        Directory where the extracted frames will be saved.
+
+    Returns:
+    --------
+    list
+        A list of file paths to the saved frame images.
     """
+
     os.makedirs(output_dir, exist_ok=True)
     cap = cv2.VideoCapture(video_path)
     frame_count = 0
@@ -60,11 +92,35 @@ def generate_csv_from_frames(frame_paths, csv_path):
     """
     Create a CSV file with the list of frame image paths.
     """
+    
     data = {'filename': frame_paths}
     df = pd.DataFrame(data)
     df.to_csv(csv_path, index=False)
 
 def running_tests(input_csv, weights_dir, models_list, device, batch_size=1):
+    """
+    Run inference tests using a list of models on a dataset of images.
+
+    Parameters:
+    -----------
+    input_csv : str
+        Path to a CSV file containing a 'filename' column with paths to the images.
+    weights_dir : str
+        Directory where model weights and configurations are stored.
+    models_list : list
+        List of model names to load and evaluate.
+    device : torch.device
+        The device to run the models on (e.g., 'cpu' or 'cuda').
+    batch_size : int, optional
+        Number of images to process in a batch (default is 1).
+
+    Returns:
+    --------
+    pd.DataFrame
+        A DataFrame containing the input data with additional columns 
+        for each model's inference results.
+    """
+    
     table = pd.read_csv(input_csv)[['filename',]]
     rootdataset = os.path.dirname(os.path.abspath(input_csv))
 
@@ -103,7 +159,7 @@ def running_tests(input_csv, weights_dir, models_list, device, batch_size=1):
         models_dict[model_name] = (transform_key, model)
         print(flush=True)
 
-    ### test
+    ### TEST
     with torch.no_grad():
         do_models = list(models_dict.keys())
         do_transforms = set([models_dict[_][0] for _ in do_models])
@@ -151,11 +207,41 @@ def running_tests(input_csv, weights_dir, models_list, device, batch_size=1):
     return table
 
 def save_results(string_videos, video_name, input_csv, models, fusion_methods, threshold=0, just_soft_or_prob=False):
+    """
+    Save prediction results for video analysis to a CSV file.
+
+    Parameters:
+    -----------
+    string_videos : str
+        Identifier for the video batch being processed.
+    video_name : str
+        Name of the video being analyzed.
+    input_csv : str
+        Path to the CSV file containing model and fusion method predictions.
+    models : list
+        List of model names whose predictions are included in the analysis.
+    fusion_methods : list
+        List of fusion methods used for generating combined predictions.
+    threshold : float, optional
+        Decision threshold for classifying frames (default is 0).
+    just_soft_or_prob : bool, optional
+        If True, compute results only for 'fusion[soft_or_prob]' (default is False).
+
+    Returns:
+    --------
+    str
+        Path to the output CSV file containing the results.
+
+    Raises:
+    -------
+    RuntimeError
+        If an error occurs during processing, with details of the issue.
+    """
+
     try:
         data = pd.read_csv(input_csv)
         output_csv = os.path.join(RESULTS_PATH, f'results_{string_videos}.csv')
         
-        # Initialize DataFrame for results
         if os.path.exists(output_csv) and os.path.getsize(output_csv) > 0:
             df = pd.read_csv(output_csv)
         else:
@@ -186,23 +272,48 @@ def save_results(string_videos, video_name, input_csv, models, fusion_methods, t
         
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         df.to_csv(output_csv, index=False)
+        
         return output_csv
+
     except Exception as e:
         raise RuntimeError(f"Error analyzing video: {e}")
 
 def process_single_folder(video):
-    parent_path = os.path.dirname(os.path.abspath(__file__))
+    """
+    Process videos from a specified folder by extracting frames, running model tests, 
+    applying fusion methods, and saving results to CSV files.
+
+    Parameters:
+    -----------
+    video : str
+        Identifier to select the type of videos to process:
+        '1' for Luma, '2' for Real, '3' for CogVideoX, and others for HunyuanVideo.
+
+    Returns:
+    --------
+    None
+        Results are saved as CSV files in the specified output directory.
+    """
     
-    luma_folder = os.path.join(parent_path, f"tests/Luma_dream_machine")
-    real_folder = os.path.join(parent_path, f"tests/Real")
-    cogvideo_folder = os.path.join(parent_path, f"tests/CogVideoX-5b")
-    hunyuan_folder = os.path.join(parent_path, f"tests/Hunyuan")
+    dataset_path = os.path.join(parent_path, "dataset")
+    video_paths= [os.path.join(dataset_path, f) for f in os.listdir(dataset_path) if f.endswith('.mp4')]
     
-    video_paths_luma = [os.path.join(luma_folder, f) for f in os.listdir(luma_folder) if f.endswith('.mp4')]
-    video_paths_real = [os.path.join(real_folder, f) for f in os.listdir(real_folder) if f.endswith('.mp4')]
-    video_paths_cogvideo = [os.path.join(cogvideo_folder, f) for f in os.listdir(cogvideo_folder) if f.endswith('.mp4')]
-    video_paths_hunyuan = [os.path.join(hunyuan_folder, f) for f in os.listdir(hunyuan_folder) if f.endswith('.mp4')]
+    video_paths_luma = []
+    video_paths_real = []
+    video_paths_cogvideo = []
+    video_paths_hunyuan = []
     
+    for video_path in video_paths:
+        filename = os.path.basename(video_path)
+        if "Luma" in filename:
+            video_paths_luma.append(video_path)
+        elif "Real" in filename:
+            video_paths_real.append(video_path)
+        elif "CogVideoX" in filename:
+            video_paths_cogvideo.append(video_path)
+        elif "HunyuanVideo" in filename:
+            video_paths_hunyuan.append(video_path)
+
     print("\n\n\nRunning tests on device: ", device, "\n\n\n")
     
     if video == '1':
@@ -238,45 +349,50 @@ def process_single_folder(video):
         for fusion_method in fusion_methods:
             table[f'fusion[{fusion_method}]'] = apply_fusion(table[models].values, fusion_method, axis=-1)
 
-        # filename,clipdet_latent10k,clipdet_latent10k_plus,Corvi2023,fusion[max_logit],fusion[mean_logit],fusion[median_logit],fusion[lse_logit],fusion[mean_prob],fusion[soft_or_prob]
         os.makedirs(os.path.dirname(os.path.abspath(output_csv)), exist_ok=True)
         table.to_csv(output_csv, index=False)
         print(f"Results saved to {output_csv}")
         
-        save_results(string_videos, video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)            
+        save_results(string_videos, video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)
 
 def process_all_dataset():
+    """
+    Process all MP4 videos in the dataset directory by extracting frames, 
+    running model predictions, applying fusion methods, and saving results 
+    with optical flow probabilities to CSV files.
+
+    Returns:
+    --------
+    None
+        Results and updated predictions are saved as CSV files in the output directory.
+    """
     dataset_path = os.path.join(parent_path, "dataset")
     video_paths= [os.path.join(dataset_path, f) for f in os.listdir(dataset_path) if f.endswith('.mp4')]
 
     for video_path in video_paths:
-        # print("\n\n\nRunning tests on video: ", video_path, "\n\n\n")
         
         video_name = os.path.splitext(os.path.basename(video_path))[0]
         
         csv_path = os.path.join(temp_dir, "input_images.csv")
-        # output_csv = os.path.join(RESULTS_PATH, f"dataset/frames_results_{video_name}.csv")
+        output_csv = os.path.join(RESULTS_PATH, f"dataset/frames_results_{video_name}.csv")
         
-        # # CLIP prediction
-        # print("Extracting frames from video...")
-        # frame_paths = extract_frames_from_video(video_path, temp_dir)
+        # CLIP prediction
+        print("Extracting frames from video...")
+        frame_paths = extract_frames_from_video(video_path, temp_dir)
         
-        # generate_csv_from_frames(frame_paths, csv_path)
-        # print(f"Frames extracted and CSV generated: {csv_path}")
+        generate_csv_from_frames(frame_paths, csv_path)
+        print(f"Frames extracted and CSV generated: {csv_path}")
 
-        # table = running_tests(csv_path, weights_dir, models, device)
+        table = running_tests(csv_path, weights_dir, models, device)
 
-        # for fusion_method in fusion_methods:
-        #     table[f'fusion[{fusion_method}]'] = apply_fusion(table[models].values, fusion_method, axis=-1)
+        for fusion_method in fusion_methods:
+            table[f'fusion[{fusion_method}]'] = apply_fusion(table[models].values, fusion_method, axis=-1)
 
-        # # filename,clipdet_latent10k,clipdet_latent10k_plus,Corvi2023,fusion[max_logit],fusion[mean_logit],fusion[median_logit],fusion[lse_logit],fusion[mean_prob],fusion[soft_or_prob]
-
-        # os.makedirs(os.path.dirname(os.path.abspath(output_csv)), exist_ok=True)
-        # table.to_csv(output_csv, index=False)
-        # print(f"Results saved to {output_csv}")
+        os.makedirs(os.path.dirname(os.path.abspath(output_csv)), exist_ok=True)
+        table.to_csv(output_csv, index=False)
+        print(f"Results saved to {output_csv}")
     
-        # output_csv_results = save_results("complete_dataset", video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)            
-        output_csv_results = os.path.join(RESULTS_PATH, f'results_complete_dataset.csv')
+        output_csv_results = save_results("complete_dataset", video_name, output_csv, models, fusion_methods, JUST_SOFT_OR_PROB)            
 
         # OF prediction
         df = pd.read_csv(output_csv_results)
@@ -287,7 +403,7 @@ def process_all_dataset():
 
         df.loc[df['filename'] == video_name, 'prediction_OF'] = prediction
 
-        df.to_csv(csv_path, index=False)
+        df.to_csv(output_csv_results, index=False)
 
         print(f"Updated CSV with new OF prediction for {video_name}.")
 

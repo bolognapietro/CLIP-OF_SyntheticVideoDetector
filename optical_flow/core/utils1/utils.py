@@ -83,9 +83,8 @@ class Logger(object):
 
 def get_network(arch: str, isTrain=False, continue_train=False, init_gain=0.02, pretrained=True):
     if "resnet" in arch:
-        from networks.resnet import ResNet
-
-        resnet = getattr(import_module("networks.resnet"), arch)
+        from optical_flow.core.utils1.networks.resnet import ResNet
+        resnet = getattr(import_module("optical_flow.core.utils1.networks.resnet"), arch)
         if isTrain:
             if continue_train:
                 model: ResNet = resnet(num_classes=1)

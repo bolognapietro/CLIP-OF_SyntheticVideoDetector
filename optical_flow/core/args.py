@@ -1,20 +1,22 @@
 import os
-
+from pathlib import Path
 class Args():
     def __init__(self, path_input, small=False, mixed_precision=False, alternate_corr=False, use_cpu=True, aug_norm=True, dropout=True):
         # Get the directory where this script is located
         base_dir = os.path.dirname(os.path.abspath(__file__))
 
+        current_file = Path(__file__).resolve()
+        path_grandparent = current_file.parent.parent
         # Go one directory up and construct the path to 'raft_model/raft-things.pth'
-        self.model = os.path.join(base_dir, os.path.pardir, "raft_model", "raft-things.pth")
-
+        #self.model = os.path.join(base_dir, os.path.pardir, "raft_model", "raft-things.pth")
+        self.model = os.path.join(path_grandparent, "raft_model", "raft-things.pth")
 
         # Other paths
         self.path = path_input
         file_name = os.path.basename(path_input)
-        self.folder_original_path = os.path.join(base_dir, os.path.pardir, "frame", file_name)
-        self.folder_optical_flow_path = os.path.join(base_dir, os.path.pardir, "optical_result", file_name)
-        self.model_optical_flow_path = os.path.join(base_dir, os.path.pardir, "checkpoints", "optical.pth")
+        self.folder_original_path = os.path.join(path_grandparent, "frame", file_name)
+        self.folder_optical_flow_path = os.path.join(path_grandparent, "optical_result", file_name)
+        self.model_optical_flow_path = os.path.join(path_grandparent, "checkpoints", "optical.pth")
 
         # Flags and other parameters
         self.small = small
