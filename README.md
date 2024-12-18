@@ -18,16 +18,6 @@ This repository provides a framework for detecting synthetic videos by combining
 - `dataset/`: Folder containing the video dataset to be analyzed.
 
 ## Requirements
-- Python 3.x
-- PyTorch
-- OpenCV
-- torchvision
-- tqdm
-- pandas
-- numpy
-- yaml
-- PIL
-
 Install dependencies with:
 
 ```bash
