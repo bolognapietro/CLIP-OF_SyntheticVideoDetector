@@ -79,10 +79,10 @@ To visually represent the results obtained in a clearer and more comprehensible 
    cd graph_creation 
    ```
 2. The directory contains four different scripts, each designed to create a specific type of graph. All scripts use the CSV file `results_complete_dataset.csv` as input and generate corresponding graphs:
-   - `detector_graph_maker.py`: Generates a graph to analyse the performance of the two baseline detectors, _CLIP_ and _AIGVDet_. 
-   - `detector_graph_maker_category.py`: Similar to the above, but allows for performance comparisons on a category-by-category basis.
-   - `CLIP-OF_graph_maker.py`: Creates a graph to evaluate the performance of our model, _CLIP-OF_. 
-   - `detector_graph_maker_category.py`: Similar to the above, but enables performance evaluation by individual categories.
+   - `detector_graph_maker.py`: generates a graph to analyse the performance of the two baseline detectors, _CLIP_ and _AIGVDet_. 
+   - `detector_graph_maker_category.py`: similar to the above, but allows for performance comparisons on a category-by-category basis.
+   - `CLIP-OF_graph_maker.py`: creates a graph to evaluate the performance of our model, _CLIP-OF_. 
+   - `detector_graph_maker_category.py`: similar to the above, but enables performance evaluation by individual categories.
 
 The folder `graph_creation/results` contains the most significant results, organized for easy reference. Specifically, it includes:
 - __CLIP Performance Graph__: `prediction_fusion[soft_or_prob] results.png`
