@@ -71,6 +71,43 @@ For each video, the system generates:
   - In this file, if prediction > 0.5 the video is considered to be synthetic (OF contributions have another scale, we will fuse them after).
 
 ---
+### Graph Creation and Performance Analysis
+To visually represent the results obtained in a clearer and more comprehensible way, we have developed a set of scripts for graph creation. Follow these steps to generate the graphs:
+
+1. Navigate to the _graph_creation_ directory by running:
+   ```bash
+   cd graph_creation 
+   ```
+2. The directory contains four different scripts, each designed to create a specific type of graph. All scripts use the CSV file `results_complete_dataset.csv` as input and generate corresponding graphs:
+   - `detector_graph_maker.py`: Generates a graph to analyse the performance of the two baseline detectors, _CLIP_ and _AIGVDet_. 
+   - `detector_graph_maker_category.py`: Similar to the above, but allows for performance comparisons on a category-by-category basis.
+   - `CLIP-OF_graph_maker.py`: Creates a graph to evaluate the performance of our model, _CLIP-OF_. 
+   - `detector_graph_maker_category.py`: Similar to the above, but enables performance evaluation by individual categories.
+
+The folder `graph_creation/results` contains the most significant results, organized for easy reference. Specifically, it includes:
+- __CLIP Performance Graph__: `prediction_fusion[soft_or_prob] results.png`
+- __AIGVDet Performance Graph__: `prediction_OF results.png`
+- __CLIP-OF Performance Graph__: `CLIP-OF results.png`
+
+Additionally, the folder provides all category-by-category performance graphs for both CLIP and CLIP-OF models.
+
+Here, we also provide a guide to read the graphs correctly:
+ - The __x-axis__ represents the samples grouped into categories (e.g., CogVideoX, Luma, HunyuanVideo, Real)
+ - The __y-axis__ shows the prediction scores ranging from 0.0 to 1.0. 
+ - Each sample is represented by a __blue dot__, with blue vertical lines connecting the dots to the baseline (0.0) for clarity.
+ - The __red dashed__ line indicates the decision threshold:
+   - The __red area__ represents the prediction that are classified as _Fake Videos_.
+   - The __green area__ represent the prediction that are classified as _Real Videos_.
+- Below each category, the graph includes an __accuracy summary__ showing correct predictions over the total number of samples.
+
+These graphs provide a clear view of the prediction distribution, highlighting false positives, false negatives, and performance across categories.
+<p align="center" text-align="center"> 
+    <img width="90%" src="graph_creation/results/CLIP-OF results.png"> 
+    <br> 
+    <span><i>Example of a performance analysis graph</i></span> 
+</p>
+
+---
 ### Research Objective
 This project aims to build a synthetic video detector that leverages high-level semantics, low-level pixel details, and motion analysis to achieve superior detection performance compared to existing methods.
 
