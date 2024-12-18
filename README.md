@@ -1,97 +1,89 @@
-# CLIP-OF_SyntheticVideoDetector
+# Optical Flow and Frame Analysis Framework
 
-Before using the code, download the weights, Luma videos and Real_ones videos from [here](https://drive.google.com/drive/folders/1iJ1gjAz05vGPXHrMafqye_qK2Br-cfI3?usp=drive_link).
+## Overview
+This repository provides a framework for detecting synthetic videos by combining information from multiple feature extraction techniques. The system integrates semantic high-level features (via CLIP), low-level pixel artifacts (via Corvi2023), and motion analysis (via RAFT-based optical flow) to build a robust detector that outperforms existing methods.
+
+## Key Features
+- **High-Level Semantic Features**: extracted using pre-trained *CLIP* models for semantic content analysis.
+- **Low-Level Pixel Artifacts**: detected with *Corvi2023* for identifying inconsistencies in pixel distributions.
+- **Motion Analysis**: *RAFT-based optical flow* to capture motion artifacts and temporal inconsistencies.
+- **Fusion-Based Detection**: combines predictions from the three feature types using advanced fusion techniques to improve detection accuracy.
+- **Performance Comparison**: evaluates and compares the new detector against existing methods to validate its superiority.
+
+## Repository Structure
+- `main.py`: main script for orchestrating video analysis, including frame extraction, feature fusion, and evaluation.
+- `optical_flow/optical_flow.py`: module for RAFT-based optical flow generation and motion-related feature extraction.
+- `weights/`: Pre-trained weights and configurations for CLIP, Corvi2023, and RAFT models.
+- `results/`: Directory for storing processed results, including intermediate outputs and final predictions.
+- `dataset/`: Folder containing the video dataset to be analyzed.
+
+## Requirements
+- Python 3.x
+- PyTorch
+- OpenCV
+- torchvision
+- tqdm
+- pandas
+- numpy
+- yaml
+- PIL
+
+Install dependencies with:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+### Process Videos
+To start processing videos and evaluate the synthetic video detector:
+
+```bash
+python main.py
+```
+You will be prompted to select one of the following options:
+
+ 1. Process Luma videos.
  
-### Script - `main.py`
-In order to install all the requirements run:
+ 2. Process Real videos.
+ 
+ 3. Process CogVideoX-5b videos.
+ 
+ 4. Process Hunyuan videos.
+ 
+ 5. Process all videos in the dataset.
 
-```
-python3 -r requirements.txt
-```
+### Feature Extraction
+- Frames: Frames are automatically extracted from the videos during processing.
+- Semantic Features: Extracted using CLIP models from the weights/ directory.
+- Pixel Artifacts: Detected using Corvi2023 weights and configurations.
+- Motion Features: Generated through RAFT optical flow analysis.
 
-The test can be executed as follows:
+### Fusion and Prediction
+The system uses multiple fusion methods (mean, max, soft probabilities, etc.) to aggregate predictions from semantic, pixel, and motion features. Results are stored as CSV files in the `results/` directory.
 
-```
-python3 main.py
-```
+> **⚠️ N.B.**
+> Based on our experiments, the optimal fusion method for combining Corvi2023 and CLIP predictions is the **soft OR probability**. To incorporate the Optical Flow (OF) contribution, we recommend using a **simple mean probability** to fuse the outputs of these two stages with motion-based features, achieving the best overall performance.
 
-The code will ask the user for which set of videos doing tests (Luma, LattE, CogVideoX).
+### Evaluate Performance
+The system outputs performance metrics comparing the new detector against baseline methods. This helps validate the improved accuracy of the combined approach.
 
-ALl results are storedd in the `results` folder.
+### Expected Output
+For each video, the system generates:
 
-For each video in the folder, `main.py` outputed a file called `frames_results_<model>_<video_name>.csv`, where are stored LLR scores for each frame of the processed video, notice that if LLR > 0, the single frame is detected as synthetic.
+- Frame-by-frame predictions given semanthic and pixel features (`<type_of_run>/frames_results_<filename>.csv`, where `type_of_run` may be [`complete_dataset`, `luma`, `hunyuan`, `real`, `cogvideo`] depending on what you choose to process on the terminal)
+- Video prediction given semanthic, pixel and motion (optical flow) features (`results_<type_of_run>.csv`, where `type_of_run` may be [`complete_dataset`, `luma`, `hunyuan`, `real`, `cogvideo`] depending on what you choose to process on the terminal)
+  - In this file, if prediction > 0.5 the video is considered to be synthetic (OF contributions have another scale, we will fuse them after).
 
-Then the results are resume in `results_<model>.csv`, where for each feature dectetor method and for each fusion method is shown the synthetic confidence degree (if > 0.5 video is detected as synthetic, otherwise as real). By setting `JUST_SOFT_OR_PROB` flag on true we can save results in the csv only with the best fusion method (`soft_or_prob`) 
+### Research Objective
+This project aims to build a synthetic video detector that leverages high-level semantics, low-level pixel details, and motion analysis to achieve superior detection performance compared to existing methods.
 
-Every `prediction` is given by the percentage of frames voting the synthetic class. 
+### Acknowledgments
+The RAFT, CLIP, and Corvi2023 models form the backbone of this framework.
+Special thanks to the open-source contributors and research communities that developed these tools.
 
-# Fusion Functions
 
-The `fusion_functions` dictionary defines several methods for combining logits or probabilities along a specified axis. Below is an explanation of each function:
 
-## 1. Mean Logit
-```python
-'mean_logit': lambda x, axis: np.mean(x, axis)
-```
-- **Description**: Computes the mean of the logits along the specified axis.
-- **Input**:
-    - x: Logits (array-like).
-    - axis: The axis along which the mean is computed.
-- **Output**: The average value of the logits along the specified axis.
 
-## 2. Max Logit
-```python
-'max_logit': lambda x, axis: np.max(x, axis)
-```
 
-- **Description**: Computes the maximum of the logits along the specified axis.
-- **Input**:
-    - x: Logits (array-like).
-    - axis: The axis along which the maximum is computed.
-- **Output**: The maximum value of the logits along the specified axis.
-
-## 3. Median Logit
-```python
-'median_logit': lambda x, axis: np.median(x, axis)
-```
-
-- **Description**: Computes the median of the logits along the specified axis.
-- **Input**:
-    - x: Logits (array-like).
-    - axis: The axis along which the median is computed.
-- **Output**: The median value of the logits along the specified axis.
-  
-## 4. LSE Logit (LogSumExp)
-```python
-'lse_logit': lambda x, axis: logsumexp(x, axis)
-```
-- **Description**: Computes the LogSumExp of the logits along the specified axis.
-LogSumExp is defined as $log(sum(exp(x)))$, which is often used for numerical stability in softmax-like operations.
-- **Input**:
-    - x: Logits (array-like).
-    - axis: The axis along which the LogSumExp is computed.
-- **Output**: The LogSumExp value of the logits along the specified axis.
-
-## 5. Mean Probability
-```python
-'mean_prob': lambda x, axis: softminusinv(logsumexp(log_expit(x), axis) - np.log(x.shape[axis]))
-```
-- **Description**: Computes the mean of probabilities derived from logits.
-Logits are first converted to probabilities using the logistic sigmoid function (log_expit).
-The mean probability is computed using the softminusinv function, which inverts the softmin operation.
-- **Input**:
-    - x: Logits (array-like).
-    - axis: The axis along which the mean probability is computed.
-- **Output**: The mean probability value along the specified axis.
-
-## 6. Soft-OR Probability
-```python
-'soft_or_prob': lambda x, axis: -softminusinv(np.sum(log_expit(-x), axis))
-```
-- **Description**: Computes a "soft OR" operation on probabilities derived from logits.
-Logits are first negated and converted to probabilities using the logistic sigmoid function (log_expit).
-A sum is applied to the probabilities, and the result is processed using softminusinv to invert the softmin operation.
-- **Input**:
-    - x: Logits (array-like).
-    - axis: The axis along which the soft OR operation is computed.
-- **Output**: A single value representing the "soft OR" of probabilities along the specified axis.
