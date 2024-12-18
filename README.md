@@ -109,7 +109,7 @@ If you use this framework in your research, please consider citing the following
    *Authors*: Lin Zhang, Xiaoyu Qiao, Yadong Wu, Yiming Li, Can He, Honggang Zhang, Xiaonan Guo, Xiaochun Cao  
    *Conference*: [Include Conference, if applicable]  
    *Abstract*: AIGVDet integrates high-level semantic features, low-level artifacts, and motion features for detecting AI-generated videos. It achieves state-of-the-art performance by leveraging a cross-modal feature fusion strategy.  
-   [Link to Paper](https://arxiv.org/pdf/2403.16638v1)
+   [Link to Paper](https://arxiv.org/pdf/2403.16638v1) | [GitHub Repository](https://github.com/multimediaFor/AIGVDet)
 
 We extend our gratitude to the open-source contributors and research communities that made these tools available.
 
